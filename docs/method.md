@@ -1,129 +1,139 @@
-# 数值方法与论文对应关系
+# Method notes
 
-## 复现范围
+## 算例
 
-用户提供的 2018 年章节是 CFEMP 方法综述，其静态 CFEMP 算法来自参考文献
-1，即 Lian、Zhang、Liu（2011）的原始方法论文。压缩包同时包含了这篇原始
-论文。为了得到具有解析解、能够自动判断对错的结果，本仓库复现原始论文
-第 5.1 节的对称弹性板碰撞，而不是直接从三维弹塑性穿甲算例起步。
+复现对象是论文第 5.1 节的对称弹性板碰撞。原文使用三维板，并约束横向
+应变，使结果成为一维纵波。这里计算 \(x-y\) 截面：板长 21 mm、宽 3 mm，
+另给 3 mm 厚度，采用二维平面应变本构。
 
-2011 年原始论文使用三维板，并在横向施加平面应变约束，使动力学退化成
-一维应力波。
-本仓库直接实现这个一维约化问题，保留论文真正需要验证的内容：
-
-- 左板采用有限元；
-- 右板采用粒子和每步重置的 MPM 背景网格；
-- 接触点分别保存 FEM 与 MPM 的质量、动量和内力；
-- 使用两段法向冲量；
-- 接触只传递压力，可以自然分离；
-- 每步记录总动量、动能、应变能与界面间隙。
-
-它不是“把两块板都用 FEM 算完，再把右板叫作 MPM”。
-
-## 论文参数
-
-| 参数 | 数值 |
-|---|---:|
-| 单板长度 | 21 mm |
-| 截面 | 3 mm × 3 mm |
-| 弹性模量 | 65 GPa |
-| 泊松比 | 0 |
-| 密度 | 2750 kg/m³ |
-| 初速度 | ±100 m/s |
-| FEM 单元尺寸 | 0.5 mm |
-| MPM 网格尺寸 | 0.5 mm |
-| 粒子间距 | 0.25 mm |
-
-波速、接触压应力和理论分离时间为
+这不是一维杆套接口。FEM 节点、MPM 粒子和背景网格都保存二维位置及速度，
+应力状态为
 
 \[
-c=\sqrt{\frac{E}{\rho}},
+\boldsymbol\sigma=
+[\sigma_{xx},\sigma_{yy},\tau_{xy}]^\mathsf T.
+\]
+
+平面应变矩阵为
+
+\[
+\mathbf D=
+\begin{bmatrix}
+\lambda+2\mu & \lambda & 0\\
+\lambda & \lambda+2\mu & 0\\
+0&0&\mu
+\end{bmatrix},
+\quad
+\lambda=\frac{E\nu}{(1+\nu)(1-2\nu)},
+\quad
+\mu=\frac{E}{2(1+\nu)}.
+\]
+
+上下边界只约束 \(v_y\)。论文参数 \(\nu=0\)，所以均匀正碰仍应保持横向
+均匀；这个性质作为回归检查，而不是通过删除 \(y\) 自由度得到。
+
+## FEM
+
+左板使用双线性 Q4 和 \(2\times2\) Gauss 积分。质量按单元质量的四分之一
+集总到节点。速度给定后，
+
+\[
+\dot{\boldsymbol\varepsilon}_e=\mathbf B_e\mathbf v_e,
 \qquad
-\sigma_c=-\rho c v_0,
-\qquad
-t_{\mathrm{sep}}=\frac{2L}{c}.
+\boldsymbol\sigma_e^{n+1}
+=\boldsymbol\sigma_e^n
++\mathbf D\dot{\boldsymbol\varepsilon}_e\Delta t.
 \]
 
-对应数值为
+内力直接由 Gauss 点应力积分：
 
 \[
-c=4861.38\ \mathrm{m/s},
-\qquad
-\sigma_c=-1336.97\ \mathrm{MPa},
-\qquad
-t_{\mathrm{sep}}=8.6389\ \mu\mathrm{s}.
+\mathbf f_e^{\mathrm{int}}
+=-\int_{\Omega_e}\mathbf B_e^\mathsf T
+\boldsymbol\sigma_e\,\mathrm d\Omega.
 \]
 
-## 两段接触冲量
+## MPM
 
-设接触网格点上 FEM 与 MPM 的状态分别为
-
-\[
-(m_r,p_r,f_r),\qquad(m_s,p_s,f_s).
-\]
-
-第一段冲量先消除半步法向相对速度：
-
-\[
-J_1=
-\frac{m_rm_s}{m_r+m_s}
-\left(v_r-v_s\right).
-\]
-
-实现中只在两体正在靠近时取 \(J_1>0\)。它对 MPM 取正、对 FEM
-取负，所以总动量增量严格为零。
-
-用预调整后的速度更新应力和内力，再计算第二段冲量：
-
-\[
-J_2=
-\Delta t\,
-\frac{m_s f_r-m_r f_s}{m_r+m_s}.
-\]
-
-若 \(J_1+J_2<0\)，说明维持接触需要拉力。无黏结接触不能传递拉力，
-因此把总接触冲量截为零并允许两板分离。
-
-## MPM 更新
-
-粒子向背景网格映射质量和动量：
+右板使用双线性背景网格。每步先清空网格，再映射粒子质量和动量：
 
 \[
 m_I=\sum_p N_{Ip}m_p,
 \qquad
-p_I=\sum_p N_{Ip}m_pv_p.
+\mathbf p_I=\sum_p N_{Ip}m_p\mathbf v_p.
 \]
 
-内力为
+粒子速度梯度和网格内力为
 
 \[
-f_I^{\mathrm{int}}
-=-\sum_p V_p\sigma_p\nabla N_{Ip}.
+\mathbf L_p=\sum_I\mathbf v_I\otimes\nabla N_{Ip},
+\qquad
+\mathbf f_I^{\mathrm{int}}
+=-\sum_pV_p\boldsymbol\sigma_p\nabla N_{Ip}.
 \]
 
-应力用预调整后的网格速度更新。粒子速度采用 95% FLIP 与 5% PIC
-混合，减小线性 MPM 的网格穿越噪声；粒子位置使用更新后的 PIC 网格
-速度推进。
+速度使用 98% FLIP 和 2% PIC；位置用 PIC 网格速度推进。少量 PIC 只用于
+压住线性 MPM 的网格穿越噪声。
 
-## 验收标准
+## 接触
 
-自动测试要求：
-
-- \(3\,\mu s\) 压应力平台相对误差小于 3%；
-- 分离时间相对误差小于 2%；
-- 归一化总动量误差小于 \(10^{-12}\)；
-- 最大相对能量误差小于 5.5%；
-- 所有三张复现图和原始历史数据成功生成。
-
-## 惩罚接触目录
-
-`mpm_fem/` 是独立的惩罚函数演示，不是论文方法。其法向定义为从左侧
-墙体指向右侧粒子的 \(+x\) 方向：
+FEM 右边界节点作为 hybrid nodes 映射到 MPM 背景网格。网格点同时保留
+两套状态
 
 \[
-\boldsymbol f_p=
-\left(k\,\delta+c\max(-v_n,0)\right)\boldsymbol n.
+(m_I^r,\mathbf p_I^r),\qquad
+(m_I^s,\mathbf p_I^s),
 \]
 
-墙体得到严格等大反向的力。多次墙体子迭代只把最终一轮接触力写给
-粒子一次，避免旧版本中粒子力累计而墙力清零造成的动量不守恒。
+其中 \(r\) 是 FEM，\(s\) 是 MPM。接触法向
+\(\mathbf n_I\in\mathbb R^2\) 由 FEM 表面法向映射并归一化。
+
+无摩擦非穿透条件写成
+
+\[
+\left(\mathbf v_I^r-\mathbf v_I^s\right)\cdot\mathbf n_I\le0.
+\]
+
+若试算速度违反该条件，施加最小法向冲量
+
+\[
+\mathbf J_I=
+\frac{m_I^rm_I^s}{m_I^r+m_I^s}
+\left[
+\left(\mathbf v_I^r-\mathbf v_I^s\right)\cdot\mathbf n_I
+\right]_+\mathbf n_I.
+\]
+
+MPM 得到 \(+\mathbf J_I\)，FEM 得到 \(-\mathbf J_I\)。网格冲量回映射
+使用质量归一化权重，因此两侧动量增量在舍入误差内等大反向。
+
+一次时间步做两次投影：
+
+1. 应力更新前投影，消除论文讨论的半步速度扰动；
+2. 内力自由推进后再投影，修正本步内力重新产生的闭合速度。
+
+固定质量和法向时，第二次投影与论文式 (39) 的第二段接触力等价。投影只
+在闭合速度为正时激活，所以界面不能传递拉力。
+
+## 验证
+
+默认运行到 15 μs。自动检查包括：
+
+- Q4 常应变 patch；
+- MPM 仿射速度场；
+- 任意斜向法向的二维动量投影；
+- 接触作用量与反作用量；
+- \(3\,\mu s\) 应力平台；
+- 8.6389 μs 解析分离时间；
+- 总动量、总能量和横向均匀性；
+- 固定空间网格下的时间步加密。
+
+时间加密使用 40、20、10 ns，并以 5 ns 解为参考。当前应力剖面相对
+\(L_2\) 误差拟合斜率为 0.86，只记为“接近一阶”。
+
+## 边界
+
+当前实现只覆盖线弹性、平面应变、无摩擦、单个平直界面。它不是三维穿甲
+求解器，也没有 Johnson-Cook、本构损伤、断裂或多接触搜索。
+
+`mpm_fem/` 是单独的惩罚函数路径，用于比较穿透和参数敏感性。

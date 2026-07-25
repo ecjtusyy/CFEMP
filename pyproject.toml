@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cfemp-reproduction"
-version = "0.1.0"
-description = "Reproducible CFEMP benchmarks and a separate penalty-contact example"
+version = "0.2.0"
+description = "2D Q4-FEM/MPM contact benchmark"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

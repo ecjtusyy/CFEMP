@@ -1,7 +1,7 @@
-"""CFEMP 论文基准的可复现实装。"""
+"""二维 CFEMP 基准。"""
 
 from .plate_impact import (
-    CFEMPPlateImpact1D,
+    CFEMPPlateImpact2D,
     PlateImpactConfig,
     SimulationHistory,
     analytical_contact_stress,
@@ -9,7 +9,7 @@ from .plate_impact import (
 )
 
 __all__ = [
-    "CFEMPPlateImpact1D",
+    "CFEMPPlateImpact2D",
     "PlateImpactConfig",
     "SimulationHistory",
     "analytical_contact_stress",

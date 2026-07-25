@@ -1,89 +1,66 @@
-# CFEMP 论文复现
+# CFEMP
 
-用户提供的 2018 年 CFEMP 章节是一篇方法综述。这里选用该章节参考文献 1
-的原始方法论文（压缩包中的 2011 年论文）所给出的对称弹性板碰撞作为首个
-可定量验收实例。
+Lian, Zhang & Liu (2011) 板碰撞算例的二维实现。
 
-本仓库包含两条明确分离的计算路径：
-
-1. `cfemp/`：复现 Lian、Zhang、Liu（2011）的 CFEMP 对称弹性板碰撞。
-2. `mpm_fem/`：经过修正的 MPM-FEM 惩罚函数接触演示，不声称是论文原始方法。
-
-## 复现结果
-
-默认参数完全对应论文第 5.1 节。
-
-| 指标 | 解析/论文值 | 本实现 | 相对误差 |
-|---|---:|---:|---:|
-| 接触压应力 | -1336.97 MPa | -1349.42 MPa | 0.93% |
-| 分离时间 | 8.6389 μs | 8.6600 μs | 0.24% |
-| 最大能量误差 | - | 3.86% | - |
-| 归一化动量误差 | 0 | \(1.47\times10^{-15}\) | - |
-
-![3 μs 应力剖面](results/symmetric_plate_impact/stress_profile_3us.png)
-
-![能量演化](results/symmetric_plate_impact/energy_evolution.png)
-
-![接触与分离](results/symmetric_plate_impact/contact_separation.png)
-
-论文参数、离散公式、两段接触冲量和验收条件见
-[`docs/method.md`](docs/method.md)。
-
-## 安装
+左板是 Q4 FEM，右板是 MPM。两套动量只在接触网格点上做法向投影，
+没有把 FEM 节点和粒子塞进同一个速度场。
 
 ```bash
 python -m pip install -e .
-```
-
-只依赖 NumPy 和 Matplotlib，不依赖未锁定版本的 Taichi。
-
-## 一键生成论文复现图片
-
-```bash
 python -m cfemp.benchmark
 ```
 
-输出目录为 `results/symmetric_plate_impact/`，包括：
+默认网格：
 
-- `stress_profile_3us.png`；
-- `energy_evolution.png`；
-- `contact_separation.png`；
-- `metrics.json`；
-- `history.npz`。
+- FEM：301 节点，252 个 Q4；
+- MPM：1008 个粒子，0.5 mm 背景网格；
+- 截面：\(21\text{ mm}\times3\text{ mm}\)，厚度 3 mm；
+- 平面应变，\(E=65\) GPa，\(\nu=0\)，\(\rho=2750\) kg/m³；
+- 两板初速度分别为 \(\pm100\) m/s。
 
-## 运行惩罚接触示例
+![二维离散](results/symmetric_plate_impact/discretization_2d.png)
 
-```bash
-python -m mpm_fem
-```
+## 结果
 
-输出目录为 `results/penalty_contact/`。
+![3 微秒轴向应力场](results/symmetric_plate_impact/stress_field_3us.png)
 
-![惩罚接触演示](results/penalty_contact/penalty_contact.png)
+| 检查项 | 数值 |
+|---|---:|
+| 接触压应力 | -1359.23 MPa |
+| 解析值 | -1336.97 MPa |
+| 应力误差 | 1.66% |
+| 分离时间 | 8.6800 μs |
+| 解析分离时间 | 8.6389 μs |
+| 最大能量误差 | 2.55% |
+| 归一化动量误差 | \(1.79\times10^{-14}\) |
+| 时间加密斜率 | 0.86 |
 
-## 测试
+原始曲线和数值历史在
+[`results/symmetric_plate_impact/`](results/symmetric_plate_impact/)。
+
+## 检查
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-测试覆盖：
+测试包含 Q4 patch、MPM 仿射场、斜向法向投影、界面动量平衡、应力波、
+分离时间、能量和时间步加密。
 
-- 形函数分片单位性；
-- 惩罚力方向；
-- 作用力与反作用力；
-- 接触子迭代不重复累计；
-- MPM 内力自平衡；
-- 论文接触压应力；
-- 论文分离时间；
-- 总动量和总能量；
-- 复现图片与历史文件生成。
+## 惩罚法
 
-## 论文来源
+`mpm_fem/` 保留为惩罚接触对照：
 
-Y. P. Lian, X. Zhang, Y. Liu, “Coupling of finite element method with
-material point method by local multi-mesh contact method,”
-*Computer Methods in Applied Mechanics and Engineering*,
-200 (2011), 3482-3494.
+```bash
+python -m mpm_fem
+```
 
-DOI: `10.1016/j.cma.2011.07.014`
+它不参与论文接触算法。方法对应关系和实现边界见
+[`docs/method.md`](docs/method.md)，修改记录见
+[`docs/devlog.md`](docs/devlog.md)。
+
+## Reference
+
+Y. P. Lian, X. Zhang, Y. Liu, *Coupling of finite element method with
+material point method by local multi-mesh contact method*, CMAME 200
+(2011) 3482-3494. DOI: `10.1016/j.cma.2011.07.014`.

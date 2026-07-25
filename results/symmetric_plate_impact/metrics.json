@@ -1,11 +1,19 @@
 {
+  "dimensions": 2,
+  "fem_nodes": 301,
+  "fem_q4_elements": 252,
+  "mpm_particles": 1008,
   "analytical_contact_stress_mpa": -1336.974195712094,
-  "numerical_contact_stress_mpa": -1349.4210854615278,
-  "stress_relative_error": 0.009309745684960345,
+  "numerical_contact_stress_mpa": -1359.232136105047,
+  "stress_relative_error": 0.016647995499343368,
   "analytical_separation_time_us": 8.638910187678144,
-  "numerical_separation_time_us": 8.659999999999927,
-  "separation_relative_error": 0.002441258430011691,
-  "max_relative_energy_error": 0.03860444367787799,
-  "max_normalized_momentum_error": 1.4685489743719002e-15,
-  "steps": 1500
+  "numerical_separation_time_us": 8.679999999999938,
+  "separation_relative_error": 0.0047563652624147395,
+  "max_relative_energy_error": 0.025498476222980272,
+  "max_normalized_momentum_error": 1.788959660787899e-14,
+  "max_contact_impulse_balance_kg_m_s": 1.6263032587282567e-19,
+  "max_transverse_velocity_m_s": 5.974306343565464e-13,
+  "max_transverse_stress_spread": 2.4965778084027097e-15,
+  "time_refinement_order": 0.8588440840727474,
+  "steps": 750
 }
