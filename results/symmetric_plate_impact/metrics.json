@@ -1,0 +1,11 @@
+{
+  "analytical_contact_stress_mpa": -1336.974195712094,
+  "numerical_contact_stress_mpa": -1349.4210854615278,
+  "stress_relative_error": 0.009309745684960345,
+  "analytical_separation_time_us": 8.638910187678144,
+  "numerical_separation_time_us": 8.659999999999927,
+  "separation_relative_error": 0.002441258430011691,
+  "max_relative_energy_error": 0.03860444367787799,
+  "max_normalized_momentum_error": 1.4685489743719002e-15,
+  "steps": 1500
+}

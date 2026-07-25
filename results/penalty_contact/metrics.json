@@ -1,0 +1,6 @@
+{
+  "steps": 300,
+  "max_active_particles": 20,
+  "max_penetration_m": 0.0014995023785653872,
+  "max_action_reaction_error_n": 2.9103830456733704e-11
+}

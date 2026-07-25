@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfemp-reproduction"
+version = "0.1.0"
+description = "Reproducible CFEMP benchmarks and a separate penalty-contact example"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "matplotlib>=3.7",
+]
+
+[project.scripts]
+cfemp-plate-impact = "cfemp.benchmark:main"
+mpm-fem-penalty = "mpm_fem.main:main"
+
+[tool.setuptools.packages.find]
+include = ["cfemp*", "mpm_fem*"]
