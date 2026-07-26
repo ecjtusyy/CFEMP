@@ -26,8 +26,11 @@ stress error      1.66 %
 separation error  0.48 %
 max energy error  2.55 %
 time slope        0.86
-tests             15 passed
+tests             16 passed
 ```
+
+补做论文图 6 的二维尺寸比扫描。MPM 网格固定 0.5 mm，FEM 网格取
+\(R=0.5,1,2,3\)，结果写入 `mesh_ratio_study.*`。
 
 还没做：
 

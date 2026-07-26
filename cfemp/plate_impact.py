@@ -94,8 +94,9 @@ class PlateImpactConfig:
             round(self.width / self.mpm_cell_size),
         ):
             raise ValueError("板宽必须是 MPM 网格尺寸的整数倍")
-        if not np.isclose(self.fem_element_size, self.mpm_cell_size):
-            raise ValueError("论文点对点接触要求 FEM 单元与 MPM 网格匹配")
+        ratio = self.fem_element_size / self.mpm_cell_size
+        if not 0.5 <= ratio <= 3.0:
+            raise ValueError("当前尺寸比 R 只验证到 [0.5, 3.0]")
 
 
 def analytical_contact_stress(config: PlateImpactConfig) -> float:

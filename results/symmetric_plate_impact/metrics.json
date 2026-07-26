@@ -15,5 +15,21 @@
   "max_transverse_velocity_m_s": 5.974306343565464e-13,
   "max_transverse_stress_spread": 2.4965778084027097e-15,
   "time_refinement_order": 0.8588440840727474,
-  "steps": 750
+  "steps": 750,
+  "R0.5_relative_l2_error": 0.19497622044242732,
+  "R0.5_compressive_peak_ratio": 1.3263742913915735,
+  "R0.5_normalized_momentum_error": 1.1481382890604723e-14,
+  "R0.5_impulse_balance_kg_m_s": 1.6263032587282567e-19,
+  "R1_relative_l2_error": 0.20557104872157542,
+  "R1_compressive_peak_ratio": 1.2748735375531188,
+  "R1_normalized_momentum_error": 1.1815144021123039e-14,
+  "R1_impulse_balance_kg_m_s": 1.6263032587282567e-19,
+  "R2_relative_l2_error": 0.21437978768503949,
+  "R2_compressive_peak_ratio": 1.1849029228251886,
+  "R2_normalized_momentum_error": 1.2682922962363274e-14,
+  "R2_impulse_balance_kg_m_s": 1.0842021724855044e-19,
+  "R3_relative_l2_error": 0.23110209214681757,
+  "R3_compressive_peak_ratio": 1.1443552395433685,
+  "R3_normalized_momentum_error": 1.3417198449757721e-14,
+  "R3_impulse_balance_kg_m_s": 5.421010862427522e-20
 }

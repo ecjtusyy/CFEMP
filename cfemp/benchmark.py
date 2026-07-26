@@ -263,6 +263,126 @@ def run_time_refinement(
     return slope
 
 
+def run_aspect_ratio_study(
+    output: Path,
+    base_config: PlateImpactConfig,
+    base_history: SimulationHistory,
+) -> dict[str, float]:
+    end_time = 3.0e-6
+    ratios = (0.5, 1.0, 2.0, 3.0)
+    histories = {1.0: base_history}
+    for ratio in ratios:
+        if ratio == 1.0:
+            continue
+        config = replace(
+            base_config,
+            fem_element_size=ratio * base_config.mpm_cell_size,
+            end_time=end_time,
+            snapshot_times=(end_time,),
+        )
+        histories[ratio] = CFEMPPlateImpact2D(config).run()
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.5))
+    rows: list[tuple[float, float, int, float, float, float, float]] = []
+    metrics: dict[str, float] = {}
+    for ratio in ratios:
+        config = replace(
+            base_config,
+            fem_element_size=ratio * base_config.mpm_cell_size,
+        )
+        snapshot = histories[ratio].snapshots[end_time]
+        x = snapshot["profile_x"]
+        stress = snapshot["profile_stress"]
+        exact = analytical_profile(x, end_time, config)
+        relative_error = float(
+            np.linalg.norm(stress - exact) / np.linalg.norm(exact)
+        )
+        peak_ratio = float(np.min(stress) / analytical_contact_stress(config))
+        arrays = histories[ratio].as_arrays()
+        until_snapshot = arrays["time"] <= end_time + 0.5 * config.dt
+        momentum_scale = (
+            config.density
+            * config.area
+            * config.length
+            * config.impact_speed
+        )
+        momentum_error = np.hypot(
+            arrays["momentum_x"] - arrays["momentum_x"][0],
+            arrays["momentum_y"] - arrays["momentum_y"][0],
+        )
+        normalized_momentum_error = float(
+            np.max(momentum_error[until_snapshot]) / momentum_scale
+        )
+        impulse_balance = float(
+            np.max(arrays["contact_balance"][until_snapshot])
+        )
+        elements = int(
+            round(config.length / config.fem_element_size)
+            * round(config.width / config.fem_element_size)
+        )
+        rows.append(
+            (
+                ratio,
+                config.fem_element_size * 1e3,
+                elements,
+                relative_error,
+                peak_ratio,
+                normalized_momentum_error,
+                impulse_balance,
+            )
+        )
+        metrics[f"R{ratio:g}_relative_l2_error"] = relative_error
+        metrics[f"R{ratio:g}_compressive_peak_ratio"] = peak_ratio
+        metrics[
+            f"R{ratio:g}_normalized_momentum_error"
+        ] = normalized_momentum_error
+        metrics[
+            f"R{ratio:g}_impulse_balance_kg_m_s"
+        ] = impulse_balance
+        ax.plot(
+            x * 1e3,
+            stress / 1e6,
+            lw=1.0,
+            label=f"R={ratio:g}",
+        )
+
+    reference_x = histories[1.0].snapshots[end_time]["profile_x"]
+    ax.plot(
+        reference_x * 1e3,
+        analytical_profile(reference_x, end_time, base_config) / 1e6,
+        "k--",
+        lw=1.4,
+        label="analytical",
+    )
+    ax.set(
+        xlabel="x (mm)",
+        ylabel=r"$\sigma_{xx}$ (MPa)",
+        title=r"mesh ratio study at 3.0 $\mu$s",
+    )
+    ax.legend(ncol=2)
+    fig.tight_layout()
+    fig.savefig(output / "mesh_ratio_study.png")
+    plt.close(fig)
+
+    with (output / "mesh_ratio_study.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as stream:
+        writer = csv.writer(stream, lineterminator="\n")
+        writer.writerow(
+            (
+                "R",
+                "fem_element_size_mm",
+                "fem_q4_elements",
+                "relative_l2_error",
+                "compressive_peak_ratio",
+                "normalized_momentum_error",
+                "impulse_balance_kg_m_s",
+            )
+        )
+        writer.writerows(rows)
+    return metrics
+
+
 def run_benchmark(output_dir: str | os.PathLike[str]) -> dict[str, float]:
     _plot_style()
     output = Path(output_dir)
@@ -279,6 +399,7 @@ def run_benchmark(output_dir: str | os.PathLike[str]) -> dict[str, float]:
     refinement_order = run_time_refinement(
         output, config, history
     )
+    ratio_metrics = run_aspect_ratio_study(output, config, history)
 
     numerical_stress = _stress_metric(snapshot, config, 3.0e-6)
     exact_stress = analytical_contact_stress(config)
@@ -338,6 +459,7 @@ def run_benchmark(output_dir: str | os.PathLike[str]) -> dict[str, float]:
         "max_transverse_stress_spread": transverse_stress_spread,
         "time_refinement_order": refinement_order,
         "steps": int(len(arrays["time"]) - 1),
+        **ratio_metrics,
     }
     (output / "metrics.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n",

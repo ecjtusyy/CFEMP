@@ -24,6 +24,10 @@ python -m cfemp.benchmark
 
 ![3 微秒轴向应力场](results/symmetric_plate_impact/stress_field_3us.png)
 
+固定 MPM 网格为 0.5 mm，改变 FEM/MPM 尺寸比：
+
+![尺寸比扫描](results/symmetric_plate_impact/mesh_ratio_study.png)
+
 | 检查项 | 数值 |
 |---|---:|
 | 接触压应力 | -1359.23 MPa |

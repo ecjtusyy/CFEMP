@@ -162,6 +162,21 @@ class TestPaperPlateImpact2D(unittest.TestCase):
         self.assertGreater(self.metrics["time_refinement_order"], 0.7)
         self.assertLess(self.metrics["time_refinement_order"], 1.3)
 
+    def test_mesh_ratio_study(self):
+        self.assertLess(
+            self.metrics["R1_relative_l2_error"],
+            self.metrics["R3_relative_l2_error"],
+        )
+        for ratio in ("0.5", "1", "2", "3"):
+            self.assertLess(
+                self.metrics[f"R{ratio}_normalized_momentum_error"],
+                1.0e-12,
+            )
+            self.assertLess(
+                self.metrics[f"R{ratio}_impulse_balance_kg_m_s"],
+                1.0e-15,
+            )
+
     def test_artifacts(self):
         for name in (
             "discretization_2d.png",
@@ -171,6 +186,8 @@ class TestPaperPlateImpact2D(unittest.TestCase):
             "contact_separation.png",
             "time_refinement.png",
             "time_refinement.csv",
+            "mesh_ratio_study.png",
+            "mesh_ratio_study.csv",
             "metrics.json",
             "history.npz",
         ):
