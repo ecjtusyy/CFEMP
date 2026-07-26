@@ -27,6 +27,17 @@ python -m cfemp.benchmark_3d
 
 ## 三维结果
 
+![三维节点与粒子运动](results/symmetric_plate_impact_3d/impact_deformation.gif)
+
+上半幅是真实位移，下半幅把位移放大 4 倍。蓝色网格是 FEM 节点，红色点云
+是 MPM 粒子；接触节点先减速，压缩波向自由端传播，卸载后两板反向分离。
+
+```bash
+python -m cfemp.animate_impact_3d
+```
+
+输出一个 GIF，直接在 README 中预览节点和粒子的运动。
+
 ![三维中截面应力](results/symmetric_plate_impact_3d/stress_slice_3us.png)
 
 | 检查项 | 数值 |

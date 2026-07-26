@@ -17,6 +17,7 @@ dependencies = [
 [project.scripts]
 cfemp-plate-impact = "cfemp.benchmark:main"
 cfemp-plate-impact-3d = "cfemp.benchmark_3d:main"
+cfemp-plate-impact-3d-animation = "cfemp.animate_impact_3d:main"
 mpm-fem-penalty = "mpm_fem.main:main"
 
 [tool.setuptools.packages.find]
