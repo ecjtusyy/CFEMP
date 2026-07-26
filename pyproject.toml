@@ -4,17 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cfemp-reproduction"
-version = "0.2.0"
-description = "2D Q4-FEM/MPM contact benchmark"
+version = "0.3.0"
+description = "Taichi 3D CFEMP plate-impact benchmark"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "numpy>=1.24",
+  "numpy>=1.24,<2",
   "matplotlib>=3.7",
+  "taichi==1.7.4",
 ]
 
 [project.scripts]
 cfemp-plate-impact = "cfemp.benchmark:main"
+cfemp-plate-impact-3d = "cfemp.benchmark_3d:main"
 mpm-fem-penalty = "mpm_fem.main:main"
 
 [tool.setuptools.packages.find]
